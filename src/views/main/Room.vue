@@ -43,10 +43,10 @@
                               <p>Online</p>
                           </div>
                         </div>
-                        <!-- <li v-for="(message, index) in messages" class="list-group-item" :key="index">{{message.body}} - {{formatDate(message.createdAt)}}</li> -->
-                        <li v-for="(message, index ) in messages" :key="index">
-                          {{message}}
-                        </li>
+                        <li v-for="(message, index) in messages" class="list-group-item" :key="index">{{message.body}} - {{formatDate(message.time)}}</li>
+                        <!-- <li v-for="(message, index ) in messages" :key="index">
+                          {{message.body}}
+                        </li> -->
                     </ul>
                     <!-- <input type="text" v-model="inputMessage"> -->
                 </div>
@@ -63,17 +63,18 @@
 </template>
 
 <script>
-import io from 'socket.io-client'
+// import io from 'socket.io-client'
 // import empityMessage from '../../components/base/empityMessage'
 import inputMessage from '../../components/base/inputMessage'
 import cardUser from '../../components/base/cardUser'
 import Profile from '../../components/base/Profile'
 // import chatList from '../components/base/chatList'
-import { mapActions, mapGetters } from 'vuex'
+import {mapGetters } from 'vuex'
 import moment from 'moment'
 moment.locale('id')
 export default {
   name: 'Roomchat',
+  props: ['socket'],
   components: {
     // empityMessage,
     inputMessage,
@@ -83,10 +84,12 @@ export default {
   },
   data () {
     return {
-      socket: io('http://localhost:4000'),
-      name: '',
-      messages: [],
-      room: '',
+      receiverId: 1,
+      chatmessage: []
+      // socket: io('http://localhost:4000'),
+      // name: '',
+      // messages: [],
+      // room: '',
       // menuProfile: false,
       // settingShow: false,
       // receiverId: 3
@@ -94,21 +97,23 @@ export default {
   },
   computed: {
     ...mapGetters({
-      listUser: 'listUser',
-      userId: 'getUserId',
-      getName: 'name',
-      username: 'username',
-      image: 'image'
+      userId: 'getUserId'
+      // listUser: 'listUser',
+      // userId: 'getUserId',
+      // getName: 'name',
+      // username: 'username',
+      // image: 'image'
     })
   },
   mounted () {
-    const username = this.$route.query.username
-    const room = this.$route.query.room
-    this.socket.emit('initialUser', {username: username, room: room})
-    this.socket.emit('initialidUser', localStorage.getItem('id'))
-    this.socket.on('kirimkembali', (data)=> {
-    this.messages.push(data)
-    })
+    this.socket.emit('setupUserLogin', this.userId)
+    // const username = this.$route.query.username
+    // const room = this.$route.query.room
+    // this.socket.emit('initialUser', {username: username, room: room})
+    // this.socket.emit('initialidUser', localStorage.getItem('id'))
+    // this.socket.on('kirimkembali', (data)=> {
+    // this.messages.push(data)
+    // })
     // this.socket.emit('setupUserLogin', this.userId)
     // this.socket.on('receiverMessage', data => {
     //   console.log(data)
@@ -117,10 +122,26 @@ export default {
     // this.getUsers()
   },
   methods: {
-    handleClick () {
-      this.socket.emit('receiverMessage', {room: this.room, message: this.inputMessage})
-      this.inputMessage =''
+    handleSendMessage (data) {
+      console.log(data.dom)
+      data.dom.value = ''
+      data.dom.focus()
+      const dataMessage = {
+        body: data.msg,
+        senderId: this.userId,
+        receiverId: this.receiverId,
+      }
+      this.socket.emit('sendMessage', dataMessage, data => {
+        this.message.push(data)
+      })
+    },
+    formatDate(date) {
+      return moment(date).format('LT')
     }
+    // handleClick () {
+    //   this.socket.emit('receiverMessage', {room: this.room, message: this.inputMessage})
+    //   this.inputMessage =''
+    // }
     // handleMenuProfile () {
     //   if (this.menuProfile === false) {
     //     this.menuProfile = true
@@ -153,7 +174,7 @@ export default {
     // setSearch (e) {
     //   this.handleSearch(e.target.value)
     },
-    ...mapActions(['getUsers', 'handleSearch'])
+    // ...mapActions(['getUsers', 'handleSearch'])
   }
 </script>
 
